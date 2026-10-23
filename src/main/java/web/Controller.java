@@ -1,7 +1,6 @@
 package web;
 
 import java.io.IOException;
-import java.util.List;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -12,17 +11,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import DAO.IServiceProduit;
 import DAO.ServiceProduitImpl;
-import entities.Produit; // doit être identique au package de Produit.java
+import entities.Produit;
 
 @WebServlet(urlPatterns = { "/", "/accueil", "/search", "/delete", "/modify", "/add" })
 public class Controller extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
-	private IServiceProduit service;
+	// Noms des nouvelles vues JSTL (un seul endroit à modifier si besoin)
+	private static final String VUE_LISTE = "/vue2.jsp";
+	private static final String VUE_AJOUT = "/ajout2JSTL.jsp";
+	private static final String VUE_MODIF = "/modify2JSTL.jsp";
 
-	public Controller() {
-		super();
-	}
+	private IServiceProduit service;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -33,24 +33,27 @@ public class Controller extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+		request.setCharacterEncoding("UTF-8");
 		String path = request.getServletPath();
-		System.out.println(path);
 
-		if (path.equals("/") || path.equals("/accueil")) {
-			List<Produit> liste = service.getAllProducts();
-			request.setAttribute("prods", liste);
-			request.getRequestDispatcher("/vue.jsp").forward(request, response);
+		switch (path) {
+		case "/":
+		case "/accueil":
+			request.setAttribute("prods", service.getAllProducts());
+			request.getRequestDispatcher(VUE_LISTE).forward(request, response);
+			break;
 
-		} else if (path.equals("/search")) {
+		case "/search":
 			String mc = request.getParameter("mc");
 			if (mc == null) {
 				mc = "";
 			}
 			request.setAttribute("prods", service.getProductsByMc(mc));
 			request.setAttribute("mc", mc);
-			request.getRequestDispatcher("/vue.jsp").forward(request, response);
+			request.getRequestDispatcher(VUE_LISTE).forward(request, response);
+			break;
 
-		} else if (path.equals("/delete")) {
+		case "/delete":
 			try {
 				int id = Integer.parseInt(request.getParameter("id"));
 				service.deleteProduct(id);
@@ -58,27 +61,23 @@ public class Controller extends HttpServlet {
 				e.printStackTrace();
 			}
 			response.sendRedirect(request.getContextPath() + "/accueil");
-		} else if (path.equals("/modify")) {
-			int id =Integer.parseInt(request.getParameter("id"));
-			Produit p=service.getProduct(id);
-			
-			
-			
-			
-			
-			
-			request.setAttribute("produit", p);
-			request.getRequestDispatcher("/modify.jsp").forward(request, response);
-			
-			
-			
-			
+			break;
 
-		} else if (path.equals("/add")) {
-			
-			
-			request.getRequestDispatcher("/ajout.jsp").forward(request, response);
-		} else {
+		case "/modify":
+			try {
+				int id = Integer.parseInt(request.getParameter("id"));
+				request.setAttribute("produit", service.getProduct(id));
+			} catch (NumberFormatException e) {
+				request.setAttribute("produit", null);
+			}
+			request.getRequestDispatcher(VUE_MODIF).forward(request, response);
+			break;
+
+		case "/add":
+			request.getRequestDispatcher(VUE_AJOUT).forward(request, response);
+			break;
+
+		default:
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
 	}
@@ -88,45 +87,60 @@ public class Controller extends HttpServlet {
 			throws ServletException, IOException {
 		request.setCharacterEncoding("UTF-8");
 		String path = request.getServletPath();
-		
-			if (path.equals("/add")) {
-					
-					String nom = request.getParameter("nom");
-					double prix = Double.parseDouble(request.getParameter("prix"));
-					int quantite = Integer.parseInt(request.getParameter("quantite"));
-					Produit p=new Produit(nom,prix,quantite);
-					service.addProduct(p);
-					response.sendRedirect(request.getContextPath() + "/accueil");
-		
-		
-			}else if (path.equals("/modify")){
+
+		switch (path) {
+		case "/add":
+			try {
+				String nom = request.getParameter("nom");
+				double prix = Double.parseDouble(request.getParameter("prix"));
+				int quantite = Integer.parseInt(request.getParameter("quantite"));
+
+				if (nom == null || nom.trim().isEmpty()) {
+					throw new IllegalArgumentException("Le nom est obligatoire.");
+				}
+
+				service.addProduct(new Produit(nom.trim(), prix, quantite));
+				response.sendRedirect(request.getContextPath() + "/accueil");
+
+			} catch (NumberFormatException e) {
+				request.setAttribute("erreur", "Prix ou quantité invalide.");
+				request.getRequestDispatcher(VUE_AJOUT).forward(request, response);
+			} catch (IllegalArgumentException e) {
+				request.setAttribute("erreur", e.getMessage());
+				request.getRequestDispatcher(VUE_AJOUT).forward(request, response);
+			}
+			break;
+
+		case "/modify":
+			try {
+				int id = Integer.parseInt(request.getParameter("id"));
+				String nom = request.getParameter("nom");
+				double prix = Double.parseDouble(request.getParameter("prix"));
+				int quantite = Integer.parseInt(request.getParameter("quantite"));
+
+				if (nom == null || nom.trim().isEmpty()) {
+					throw new IllegalArgumentException("Le nom est obligatoire.");
+				}
+
+				service.updateProduct(id, new Produit(nom.trim(), prix, quantite));
+				response.sendRedirect(request.getContextPath() + "/accueil");
+
+			} catch (IllegalArgumentException e) {
+				// NumberFormatException hérite d'IllegalArgumentException
+				request.setAttribute("erreur", e instanceof NumberFormatException
+						? "Valeurs invalides." : e.getMessage());
 				try {
 					int id = Integer.parseInt(request.getParameter("id"));
-					String nom = request.getParameter("nom");
-					double prix = Double.parseDouble(request.getParameter("prix"));
-					int quantite = Integer.parseInt(request.getParameter("quantite"));	
-					Produit p=new Produit(nom,prix,quantite);
-					service.updateProduct(id, p);
-				
-				
-			
-					response.sendRedirect(request.getContextPath() + "/accueil");
-				
-				} catch (NumberFormatException e) {
-					e.printStackTrace();
+					request.setAttribute("produit", service.getProduct(id));
+				} catch (NumberFormatException ex) {
+					request.setAttribute("produit", null);
 				}
-				
-				
+				request.getRequestDispatcher(VUE_MODIF).forward(request, response);
 			}
-			
-			
-			
-			
-			
-			
+			break;
 
-
-		
+		default:
+			response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+		}
 	}
-
 }
