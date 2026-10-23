@@ -12,9 +12,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import DAO.IServiceProduit;
 import DAO.ServiceProduitImpl;
-import entities.Produit;   // doit être identique au package de Produit.java
+import entities.Produit; // doit être identique au package de Produit.java
 
-@WebServlet(urlPatterns = { "/", "/accueil", "/search", "/delete" })
+@WebServlet(urlPatterns = { "/", "/accueil", "/search", "/delete", "/modify", "/add" })
 public class Controller extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
@@ -58,7 +58,26 @@ public class Controller extends HttpServlet {
 				e.printStackTrace();
 			}
 			response.sendRedirect(request.getContextPath() + "/accueil");
+		} else if (path.equals("/modify")) {
+			int id =Integer.parseInt(request.getParameter("id"));
+			Produit p=service.getProduct(id);
+			
+			
+			
+			
+			
+			
+			request.setAttribute("produit", p);
+			request.getRequestDispatcher("/modify.jsp").forward(request, response);
+			
+			
+			
+			
 
+		} else if (path.equals("/add")) {
+			
+			
+			request.getRequestDispatcher("/ajout.jsp").forward(request, response);
 		} else {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
@@ -67,6 +86,47 @@ public class Controller extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		doGet(request, response);
+		request.setCharacterEncoding("UTF-8");
+		String path = request.getServletPath();
+		
+			if (path.equals("/add")) {
+					
+					String nom = request.getParameter("nom");
+					double prix = Double.parseDouble(request.getParameter("prix"));
+					int quantite = Integer.parseInt(request.getParameter("quantite"));
+					Produit p=new Produit(nom,prix,quantite);
+					service.addProduct(p);
+					response.sendRedirect(request.getContextPath() + "/accueil");
+		
+		
+			}else if (path.equals("/modify")){
+				try {
+					int id = Integer.parseInt(request.getParameter("id"));
+					String nom = request.getParameter("nom");
+					double prix = Double.parseDouble(request.getParameter("prix"));
+					int quantite = Integer.parseInt(request.getParameter("quantite"));	
+					Produit p=new Produit(nom,prix,quantite);
+					service.updateProduct(id, p);
+				
+				
+			
+					response.sendRedirect(request.getContextPath() + "/accueil");
+				
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				}
+				
+				
+			}
+			
+			
+			
+			
+			
+			
+
+
+		
 	}
+
 }

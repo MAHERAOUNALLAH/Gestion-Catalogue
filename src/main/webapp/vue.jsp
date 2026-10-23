@@ -22,6 +22,7 @@
 			<div class="card-header">
 				<h2 class="text-danger">Liste des Produits</h2>
 			</div>
+			<div><a href="add" class="btn btn-secondary center">Ajouter Porduit </a></div>
 			<div class="card-body">
 
 				<form action="search" method="get" class="row g-2 mb-3">
@@ -54,6 +55,7 @@
 						<td><a class="btn btn-danger"
 							href="delete?id=<%=p.getId()%>"
 							onclick="return confirm('Supprimer ce produit ?');">Supprimer</a></td>
+						<td><a class="btn btn-warning" href="modify?id=<%=p.getId()%>"onclick="voulez vous modifier le produit  ?');">modifier</a></td>
 					</tr>
 					<%
 							}
